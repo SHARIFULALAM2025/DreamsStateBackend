@@ -82,7 +82,7 @@ app.get('/users', async (req, res) => {
     }
 });
 //
-app.post('/api/components', async (req, res) => {
+app.post('/about/components', async (req, res) => {
     const { component_name, content_data } = req.body;
     try {
 
