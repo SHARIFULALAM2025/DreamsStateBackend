@@ -449,9 +449,9 @@ const getPropertyById = async (req, res) => {
 
 const getBuyProperties = async (req, res) => {
     try {
-        // LIKE অপারেটরে ডাটাবেজ ভেদে কোটেশনের তারতম্য এড়াতে সুনির্দিষ্টভাবে খোঁজা
+        // PostgreSQL-এর জন্য সঠিক কুয়েরি: property_type->>'en' = 'Buy'
         const properties = await knex('properties')
-            .where('property_type', 'like', '%"en"%"Buy"%')
+            .whereRaw("property_type->>'en' = ?", ['Buy'])
             .orderBy('id', 'desc');
 
         if (!properties || properties.length === 0) {
@@ -462,15 +462,14 @@ const getBuyProperties = async (req, res) => {
             });
         }
 
-        // ক্র্যাশ-প্রুফ নিরাপদ JSON পার্সিং হেল্পার ফাংশন
+        // নিরাপদ JSON পার্সিং হেল্পার ফাংশন
         const safeParse = (field) => {
             if (!field) return null;
-            if (typeof field === 'object') return field; // অলরেডি অবজেক্ট/অ্যারে হলে সরাসরি রিটার্ন করবে
+            if (typeof field === 'object') return field;
             try {
                 return JSON.parse(field);
             } catch (e) {
-                console.log("Parsing failed for field, sending raw:", field);
-                return field; // পার্সিং ফেইল করলে ক্র্যাশ না করে র-ডেটা পাঠাবে
+                return field;
             }
         };
 
