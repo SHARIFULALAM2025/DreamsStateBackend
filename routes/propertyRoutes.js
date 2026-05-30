@@ -1,29 +1,23 @@
-const express =
-    require('express')
-
-const router =
-    express.Router()
+const express = require('express')
+const router = express.Router()
 
 const {
     addProperty,
     getProperties,
     getPropertyById,
     getBuyProperties
-} = require(
-    '../controllers/propertyController'
-)
+} = require('../controllers/propertyController')
 
-router.post(
-    '/add',
-    addProperty
-)
+// ১. পোস্ট রাউট
+router.post('/add', addProperty)
 
-router.get(
-    '/',
-    getProperties
-)
+// ২. সাধারণ গেট রাউট (সব প্রপার্টি)
+router.get('/', getProperties)
+
+// ৩. সুনির্দিষ্ট রাউট (এটি অবশ্যই /:id এর উপরে থাকবে)
+router.get('/buy', getBuyProperties) // <--- এখানে নিয়ে আসুন
+
+// ৪. ডাইনামিক রাউট (সবার নিচে)
 router.get('/:id', getPropertyById)
-router.get('/buy', getBuyProperties)
 
-module.exports =
-    router
+module.exports = router
