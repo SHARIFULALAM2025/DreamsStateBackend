@@ -449,9 +449,10 @@ const getPropertyById = async (req, res) => {
 
 const getBuyProperties = async (req, res) => {
     try {
-        // PostgreSQL-এর জন্য সঠিক কুয়েরি: property_type->>'en' = 'Buy'
+        // সুপাবেস বা পোস্টগ্রিসের জন্য সবচেয়ে নিরাপদ কুয়েরি:
+        // এটি ডাটাবেজে ডেটা অবজেক্ট বা স্ট্রিং যেভাবে থাকুক না কেন, 'Buy' লেখাটি খুঁজে বের করবেই।
         const properties = await knex('properties')
-            .whereRaw("property_type->>'en' = ?", ['Buy'])
+            .whereRaw("property_type::text ILIKE ?", ['%Buy%'])
             .orderBy('id', 'desc');
 
         if (!properties || properties.length === 0) {
@@ -462,12 +463,18 @@ const getBuyProperties = async (req, res) => {
             });
         }
 
-        // নিরাপদ JSON পার্সিং হেল্পার ফাংশন
+        // ডাবল-স্ট্রিং বা সিঙ্গেল-স্ট্রিং যাই হোক, ক্র্যাশ না করে অবজেক্টে রূপান্তর করার মাস্টার হেল্পার
         const safeParse = (field) => {
             if (!field) return null;
             if (typeof field === 'object') return field;
+
             try {
-                return JSON.parse(field);
+                let parsed = JSON.parse(field);
+                // যদি ডাবল-স্ট্রিং হয় (অর্থাৎ পার্স করার পরও আবার স্ট্রিং থেকে যায়)
+                if (typeof parsed === 'string') {
+                    parsed = JSON.parse(parsed);
+                }
+                return parsed;
             } catch (e) {
                 return field;
             }
