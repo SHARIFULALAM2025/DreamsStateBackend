@@ -419,12 +419,10 @@ const getPropertyById = async (req, res) => {
     try {
         const { id } = req.params;
 
-        // Mongoose বাদ দিয়ে Knex ব্যবহার করে SQL ডেটাবেজ থেকে ডেটা খুঁজুন
-        const property = await knex('properties')
-            .where({ id: id }) // অথবা শুধু .where('id', id)
-            .first(); // একটি মাত্র অবজেক্ট পাওয়ার জন্য .first() ব্যবহার করতে হবে
 
-        // যদি ওই ID দিয়ে কোনো প্রপার্টি না পাওয়া যায়
+        const property = await knex('properties')
+            .where({ id: id })
+            .first();
         if (!property) {
             return res.status(404).json({
                 success: false,
@@ -432,7 +430,7 @@ const getPropertyById = async (req, res) => {
             });
         }
 
-        // প্রপার্টি পাওয়া গেলে তা রেসপন্স হিসেবে পাঠানো
+
         res.status(200).json({
             success: true,
             data: property
@@ -447,8 +445,50 @@ const getPropertyById = async (req, res) => {
         });
     }
 };
+
+
+const getBuyProperties = async (req, res) => {
+    try {
+
+        const properties = await knex('properties')
+            .where('property_type', 'like', '%"en":"Buy"%')
+            .orderBy('id', 'desc');
+
+
+        const parsedProperties = properties.map(property => {
+            return {
+                ...property,
+                property_name: property.property_name ? JSON.parse(property.property_name) : null,
+                description: property.description ? JSON.parse(property.description) : null,
+                about_property: property.about_property ? JSON.parse(property.about_property) : null,
+                address: property.address ? JSON.parse(property.address) : null,
+                city: property.city ? JSON.parse(property.city) : null,
+                state: property.state ? JSON.parse(property.state) : null,
+                country: property.country ? JSON.parse(property.country) : null,
+                property_type: property.property_type ? JSON.parse(property.property_type) : null,
+                property_category: property.property_category ? JSON.parse(property.property_category) : null,
+                property_structure_type: property.property_structure_type ? JSON.parse(property.property_structure_type) : null,
+                attachment: property.attachment ? JSON.parse(property.attachment) : [],
+                amenities: property.amenities ? JSON.parse(property.amenities) : []
+            };
+        });
+
+        res.status(200).json({
+            success: true,
+            data: parsedProperties,
+        });
+    } catch (error) {
+        console.log('Fetch Buy Properties Error:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Failed to fetch buy properties',
+            error: error.message
+        });
+    }
+};
 module.exports = {
     addProperty,
     getProperties,
-    getPropertyById
+    getPropertyById,
+    getBuyProperties
 }

@@ -7,7 +7,8 @@ const router =
 const {
     addProperty,
     getProperties,
-    getPropertyById
+    getPropertyById,
+    getBuyProperties
 } = require(
     '../controllers/propertyController'
 )
@@ -22,6 +23,7 @@ router.get(
     getProperties
 )
 router.get('/:id', getPropertyById)
+router.get('/buy', getBuyProperties)
 
 module.exports =
     router
