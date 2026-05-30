@@ -449,27 +449,46 @@ const getPropertyById = async (req, res) => {
 
 const getBuyProperties = async (req, res) => {
     try {
-
+        // LIKE অপারেটরে ডাটাবেজ ভেদে কোটেশনের তারতম্য এড়াতে সুনির্দিষ্টভাবে খোঁজা
         const properties = await knex('properties')
-            .where('property_type', 'like', '%"en":"Buy"%')
+            .where('property_type', 'like', '%"en"%"Buy"%')
             .orderBy('id', 'desc');
 
+        if (!properties || properties.length === 0) {
+            return res.status(200).json({
+                success: true,
+                data: [],
+                message: "No buy properties found"
+            });
+        }
+
+        // ক্র্যাশ-প্রুফ নিরাপদ JSON পার্সিং হেল্পার ফাংশন
+        const safeParse = (field) => {
+            if (!field) return null;
+            if (typeof field === 'object') return field; // অলরেডি অবজেক্ট/অ্যারে হলে সরাসরি রিটার্ন করবে
+            try {
+                return JSON.parse(field);
+            } catch (e) {
+                console.log("Parsing failed for field, sending raw:", field);
+                return field; // পার্সিং ফেইল করলে ক্র্যাশ না করে র-ডেটা পাঠাবে
+            }
+        };
 
         const parsedProperties = properties.map(property => {
             return {
                 ...property,
-                property_name: property.property_name ? JSON.parse(property.property_name) : null,
-                description: property.description ? JSON.parse(property.description) : null,
-                about_property: property.about_property ? JSON.parse(property.about_property) : null,
-                address: property.address ? JSON.parse(property.address) : null,
-                city: property.city ? JSON.parse(property.city) : null,
-                state: property.state ? JSON.parse(property.state) : null,
-                country: property.country ? JSON.parse(property.country) : null,
-                property_type: property.property_type ? JSON.parse(property.property_type) : null,
-                property_category: property.property_category ? JSON.parse(property.property_category) : null,
-                property_structure_type: property.property_structure_type ? JSON.parse(property.property_structure_type) : null,
-                attachment: property.attachment ? JSON.parse(property.attachment) : [],
-                amenities: property.amenities ? JSON.parse(property.amenities) : []
+                property_name: safeParse(property.property_name),
+                description: safeParse(property.description),
+                about_property: safeParse(property.about_property),
+                address: safeParse(property.address),
+                city: safeParse(property.city),
+                state: safeParse(property.state),
+                country: safeParse(property.country),
+                property_type: safeParse(property.property_type),
+                property_category: safeParse(property.property_category),
+                property_structure_type: safeParse(property.property_structure_type),
+                attachment: safeParse(property.attachment) || [],
+                amenities: safeParse(property.amenities) || []
             };
         });
 
@@ -477,6 +496,7 @@ const getBuyProperties = async (req, res) => {
             success: true,
             data: parsedProperties,
         });
+
     } catch (error) {
         console.log('Fetch Buy Properties Error:', error);
         res.status(500).json({
