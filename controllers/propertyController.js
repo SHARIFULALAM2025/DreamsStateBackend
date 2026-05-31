@@ -449,8 +449,7 @@ const getPropertyById = async (req, res) => {
 
 const getBuyProperties = async (req, res) => {
     try {
-        // সুপাবেস বা পোস্টগ্রিসের জন্য সবচেয়ে নিরাপদ কুয়েরি:
-        // এটি ডাটাবেজে ডেটা অবজেক্ট বা স্ট্রিং যেভাবে থাকুক না কেন, 'Buy' লেখাটি খুঁজে বের করবেই।
+
         const properties = await knex('properties')
             .whereRaw("property_type::text ILIKE ?", ['%Buy%'])
             .orderBy('id', 'desc');
@@ -512,9 +511,74 @@ const getBuyProperties = async (req, res) => {
         });
     }
 };
+const getSellProperties = async (req, res) => {
+    try {
+
+        const properties = await knex('properties')
+            .whereRaw("property_type::text ILIKE ?", ['%Sell%'])
+            .orderBy('id', 'desc');
+
+        if (!properties || properties.length === 0) {
+            return res.status(200).json({
+                success: true,
+                data: [],
+                message: "No sell properties found"
+            });
+        }
+
+
+        const safeParse = (field) => {
+            if (!field) return null;
+            if (typeof field === 'object') return field;
+
+            try {
+                let parsed = JSON.parse(field);
+
+                if (typeof parsed === 'string') {
+                    parsed = JSON.parse(parsed);
+                }
+                return parsed;
+            } catch (e) {
+                return field;
+            }
+        };
+
+        const parsedProperties = properties.map(property => {
+            return {
+                ...property,
+                property_name: safeParse(property.property_name),
+                description: safeParse(property.description),
+                about_property: safeParse(property.about_property),
+                address: safeParse(property.address),
+                city: safeParse(property.city),
+                state: safeParse(property.state),
+                country: safeParse(property.country),
+                property_type: safeParse(property.property_type),
+                property_category: safeParse(property.property_category),
+                property_structure_type: safeParse(property.property_structure_type),
+                attachment: safeParse(property.attachment) || [],
+                amenities: safeParse(property.amenities) || []
+            };
+        });
+
+        res.status(200).json({
+            success: true,
+            data: parsedProperties,
+        });
+
+    } catch (error) {
+        console.log('Fetch Buy Properties Error:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Failed to fetch buy properties',
+            error: error.message
+        });
+    }
+};
 module.exports = {
     addProperty,
     getProperties,
     getPropertyById,
-    getBuyProperties
+    getBuyProperties,
+    getSellProperties
 }

@@ -5,7 +5,9 @@ const {
     addProperty,
     getProperties,
     getPropertyById,
-    getBuyProperties
+    getBuyProperties,
+    getSellProperties
+
 } = require('../controllers/propertyController')
 
 // ১. পোস্ট রাউট
@@ -15,6 +17,7 @@ router.post('/add', addProperty)
 router.get('/', getProperties)
 
 router.get('/buy', getBuyProperties) // <--- এখানে নিয়ে আসুন
+router.get('/sell', getSellProperties) // <--- এখানে নিয়ে আসুন
 
 
 router.get('/:id', getPropertyById)
