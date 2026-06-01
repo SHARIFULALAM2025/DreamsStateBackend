@@ -1,5 +1,6 @@
 const express = require('express');
 const cors = require('cors');
+const { generateToken } = require('./middleware/authMiddleware');
 const db = require('./db');
 require('dotenv').config();
 
@@ -20,7 +21,7 @@ app.use(
 )
 //
 app.post('/all-user', async (req, res) => {
-    console.log(req.body)
+    console.log(req.body);
 
     const {
         name,
@@ -28,50 +29,104 @@ app.post('/all-user', async (req, res) => {
         photo,
         password = null,
         provider = 'email',
-        role
-    } = req.body
+        role 
+    } = req.body;
 
     try {
-        // check existing user
-        const existingUser = await db('users')
-            .where({ email })
-            .first()
+        // ১. চেক করুন ইউজার আগে থেকেই আছেন কিনা
+        let user = await db('users').where({ email }).first();
 
-        if (existingUser) {
+        if (user) {
+            // ইউজার থাকলে সরাসরি টোকেন জেনারেট করে রেসপন্স দিন
+            const token = generateToken(user);
             return res.status(200).json({
-                message: 'User already exists',
-                user: existingUser,
-            })
+                message: 'User already exists, login successful',
+                user: { id: user.id, name: user.name, email: user.email, role: user.role, photo: user.photo },
+                token // ফ্রন্টএন্ড এই টোকেনটি লোকালস্টোরেজে সেভ রাখবে
+            });
         }
 
-        // insert user
-        const result = await db('users').insert({
+        // ২. ইউজার না থাকলে নতুন ইউজার ডাটাবেজে ইনসার্ট করুন
+        const [newUser] = await db('users').insert({
             name,
             email,
             photo,
             password,
             provider,
             role
-        })
+        }).returning('*'); // PostgreSQL/Supabase এ returning('*') দিলে ইনসার্ট হওয়া অবজেক্টটি সরাসরি পাওয়া যায়
+
+        // নতুন ইউজারের জন্য টোকেন তৈরি
+        const token = generateToken(newUser);
 
         res.status(201).json({
             message: 'User saved successfully!',
-            result,
-        })
+            user: { id: newUser.id, name: newUser.name, email: newUser.email, role: newUser.role, photo: newUser.photo },
+            token
+        });
 
     } catch (error) {
-        console.error(
-            'Database Error:',
-            error
-        )
-
+        console.error('Database Error:', error);
         res.status(500).json({
-            message:
-                'Internal Server Error',
+            message: 'Internal Server Error',
             error: error.message,
-        })
+        });
     }
-})
+});
+//
+// app.post('/all-user', async (req, res) => {
+//     console.log(req.body)
+
+//     const {
+//         name,
+//         email,
+//         photo,
+//         password = null,
+//         provider = 'email',
+//         role
+//     } = req.body
+
+//     try {
+
+//         const existingUser = await db('users')
+//             .where({ email })
+//             .first()
+
+//         if (existingUser) {
+//             return res.status(200).json({
+//                 message: 'User already exists',
+//                 user: existingUser,
+//             })
+//         }
+
+
+//         const result = await db('users').insert({
+//             name,
+//             email,
+//             photo,
+//             password,
+//             provider,
+//             role
+//         })
+
+//         res.status(201).json({
+//             message: 'User saved successfully!',
+//             result,
+//         })
+
+//     } catch (error) {
+//         console.error(
+//             'Database Error:',
+//             error
+//         )
+
+//         res.status(500).json({
+//             message:
+//                 'Internal Server Error',
+//             error: error.message,
+//         })
+//     }
+// })
 
 app.get('/users', async (req, res) => {
     try {

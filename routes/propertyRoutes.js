@@ -1,3 +1,4 @@
+const { protect } = require('../middleware/authMiddleware');
 const express = require('express')
 const router = express.Router()
 
@@ -10,8 +11,8 @@ const {
 
 } = require('../controllers/propertyController')
 
-// ১. পোস্ট রাউট
-router.post('/add', addProperty)
+// protect middleware
+router.post('/add', protect, addProperty)
 
 // ২. সাধারণ গেট রাউট (সব প্রপার্টি)
 router.get('/', getProperties)

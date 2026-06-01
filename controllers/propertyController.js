@@ -234,14 +234,9 @@ const addProperty = async (
                 ),
 
             // user info
-            post_name:
-                postName || '',
-
-            post_email:
-                postEmail || '',
-
-            profileUrl:
-                profileUrl || '',
+            post_name: req.user.name || '',
+            post_email: req.user.email || '',
+            profileUrl: req.user.photo || profileUrl || '',
 
             // media
             video_link:
